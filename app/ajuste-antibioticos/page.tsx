@@ -1,76 +1,114 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { MedicalDisclaimer } from "@/components/MedicalDisclaimer";
-import {
-  ANTIBIOTIC_OPTIONS,
-  type AntibioticId,
-  renalGuidanceEs,
-} from "@/lib/antibioticRenal";
+import { useState } from "react";
 
-export default function AntibioticRenalPage() {
-  const [crcl, setCrcl] = useState("");
-  const [drug, setDrug] = useState<AntibioticId>("ciprofloxacino");
+export default function AjusteAntibioticosPage() {
+  const [crcl, setCrcl] = useState("45");
+  const [drug, setDrug] = useState("piperacilina");
 
-  const cr = Number(crcl.replace(",", "."));
-  const guidance = useMemo(() => renalGuidanceEs(drug, cr), [drug, cr]);
+  const cr = Number(crcl);
+
+  function getRecommendation() {
+    if (!cr || cr <= 0) {
+      return "Ingresá un clearance válido.";
+    }
+
+    if (drug === "piperacilina") {
+      if (cr > 40) return "3,375–4,5 g IV cada 6 h según foco y gravedad.";
+      if (cr >= 20) return "2,25 g IV cada 6 h.";
+      return "2,25 g IV cada 8 h.";
+    }
+
+    if (drug === "meropenem") {
+      if (cr > 50) return "1 g IV cada 8 h.";
+      if (cr >= 26) return "1 g IV cada 12 h.";
+      if (cr >= 10) return "500 mg IV cada 12 h.";
+      return "500 mg IV cada 24 h.";
+    }
+
+    if (drug === "cefepime") {
+      if (cr > 60) return "2 g IV cada 8–12 h.";
+      if (cr >= 30) return "2 g IV cada 24 h.";
+      if (cr >= 11) return "1 g IV cada 24 h.";
+      return "500 mg IV cada 24 h.";
+    }
+
+    if (drug === "ciprofloxacino") {
+      if (cr >= 50) return "Dosis habitual.";
+      if (cr >= 30) return "400 mg IV cada 12–24 h.";
+      return "Reducir dosis o espaciar intervalo.";
+    }
+
+    if (drug === "vancomicina") {
+      return "No ajustar solo por clearance. Requiere monitoreo de niveles.";
+    }
+
+    return "Sin recomendación.";
+  }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">
-          Ajuste de antibióticos por función renal
-        </h1>
-        <p className="mt-2 text-slate-600 text-sm sm:text-base">
-          Introduce una estimación de depuración (p. ej. CrCl Cockcroft–Gault en
-          mL/min) y elige un fármaco para ver recordatorios generales. No
-          incluye dosis milimétricas: debes cruzar con tu guía hospitalaria.
-        </p>
-      </div>
+    <main className="mx-auto max-w-3xl p-6 space-y-6">
+      <h1 className="text-3xl font-bold">
+        Ajuste de antibióticos por función renal
+      </h1>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4 shadow-sm">
-        <label className="block space-y-1">
-          <span className="text-sm font-medium text-slate-700">
-            CrCl aproximada (mL/min)
-          </span>
+      <div className="border rounded-2xl p-6 space-y-4">
+        <div>
+          <label className="block mb-2 font-medium">
+            Clearance aproximado (mL/min)
+          </label>
+
           <input
-            inputMode="decimal"
-            className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-base outline-none focus:ring-2 focus:ring-teal-500/40"
+            className="w-full border rounded-xl p-3"
             value={crcl}
             onChange={(e) => setCrcl(e.target.value)}
-            placeholder="p. ej. 38"
           />
-        </label>
-        <label className="block space-y-1">
-          <span className="text-sm font-medium text-slate-700">Antibiótico</span>
+        </div>
+
+        <div>
+          <label className="block mb-2 font-medium">
+            Antibiótico
+          </label>
+
           <select
-            className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-base outline-none focus:ring-2 focus:ring-teal-500/40 bg-white"
+            className="w-full border rounded-xl p-3"
             value={drug}
-            onChange={(e) => setDrug(e.target.value as AntibioticId)}
+            onChange={(e) => setDrug(e.target.value)}
           >
-            {ANTIBIOTIC_OPTIONS.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.label}
-              </option>
-            ))}
+            <option value="piperacilina">
+              Piperacilina/Tazobactam
+            </option>
+
+            <option value="meropenem">
+              Meropenem
+            </option>
+
+            <option value="cefepime">
+              Cefepime
+            </option>
+
+            <option value="ciprofloxacino">
+              Ciprofloxacino
+            </option>
+
+            <option value="vancomicina">
+              Vancomicina
+            </option>
           </select>
-        </label>
+        </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-3 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-900">{guidance.title}</h2>
-        <ul className="list-disc pl-5 space-y-2 text-sm text-slate-700">
-          {guidance.bullets.map((b) => (
-            <li key={b}>{b}</li>
-          ))}
-        </ul>
+      <div className="border rounded-2xl p-6 bg-gray-50">
+        <h2 className="text-xl font-semibold mb-2">
+          Recomendación
+        </h2>
+
+        <p>{getRecommendation()}</p>
       </div>
 
-      <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-xs text-slate-500">
-        Zona reservada para publicidad (p. ej. AdSense).
+      <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-sm">
+        Uso orientativo. Verificar siempre con guía institucional y ficha técnica.
       </div>
-
-      <MedicalDisclaimer />
-    </div>
+    </main>
   );
 }
