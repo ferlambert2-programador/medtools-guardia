@@ -1,172 +1,57 @@
-"use client";
+import Link from "next/link";
 
-import { useMemo, useState } from "react";
-
-type AntibioticKey =
-  | "Piperacilina/Tazobactam"
-  | "Vancomicina"
-  | "Meropenem"
-  | "Cefepime"
-  | "Levofloxacina";
-
-const recommendations = {
-  "Piperacilina/Tazobactam": {
-    normal:
-      "Generalmente no requiere ajuste renal significativo.",
-    moderate:
-      "Considerar prolongar intervalos o reducir dosis según protocolo institucional.",
-    severe:
-      "Requiere ajuste renal importante y monitorización clínica.",
+const TOOLS = [
+  {
+    href: "/clearance-creatinina",
+    icon: "🫘",
+    title: "Clearance de creatinina",
+    description: "Cockcroft–Gault y CKD-EPI 2021 con estadificación renal",
   },
-
-  Vancomicina: {
-    normal:
-      "Controlar función renal y niveles plasmáticos según contexto clínico.",
-    moderate:
-      "Ajustar intervalo y monitorizar niveles valle.",
-    severe:
-      "Riesgo elevado de acumulación y nefrotoxicidad. Requiere seguimiento estrecho.",
+  {
+    href: "/ajuste-antibioticos",
+    icon: "💊",
+    title: "Ajuste de antibióticos",
+    description: "22 antibióticos con dosis ajustadas por función renal",
   },
-
-  Meropenem: {
-    normal:
-      "Habitualmente sin ajuste importante.",
-    moderate:
-      "Puede requerir reducción de dosis o aumento del intervalo.",
-    severe:
-      "Ajuste renal obligatorio según clearance y gravedad clínica.",
+  {
+    href: "/imc",
+    icon: "⚖️",
+    title: "Índice de masa corporal",
+    description: "IMC con categorías OMS para adultos",
   },
+];
 
-  Cefepime: {
-    normal:
-      "Sin ajuste renal relevante en función conservada.",
-    moderate:
-      "Reducir dosis o espaciar administración.",
-    severe:
-      "Mayor riesgo de neurotoxicidad. Ajuste renal estricto.",
-  },
-
-  Levofloxacina: {
-    normal:
-      "Generalmente sin ajuste significativo.",
-    moderate:
-      "Puede requerir espaciamiento de dosis.",
-    severe:
-      "Riesgo de acumulación. Ajustar cuidadosamente.",
-  },
-};
-
-export default function AjusteAntibioticosPage() {
-  const [crcl, setCrcl] = useState(70);
-  const [drug, setDrug] =
-    useState<AntibioticKey>("Piperacilina/Tazobactam");
-
-  const result = useMemo(() => {
-    if (crcl >= 60) {
-      return {
-        category: "Función renal conservada",
-        recommendation: recommendations[drug].normal,
-        color: "bg-green-50 border-green-200",
-      };
-    }
-
-    if (crcl >= 30) {
-      return {
-        category: "Insuficiencia renal moderada",
-        recommendation: recommendations[drug].moderate,
-        color: "bg-yellow-50 border-yellow-200",
-      };
-    }
-
-    return {
-      category: "Insuficiencia renal severa",
-      recommendation: recommendations[drug].severe,
-      color: "bg-red-50 border-red-200",
-    };
-  }, [crcl, drug]);
-
+export default function HomePage() {
   return (
-    <main className="mx-auto max-w-4xl px-6 py-10 space-y-8">
-      <section className="space-y-3">
-        <h1 className="text-4xl font-bold tracking-tight">
-          Ajuste renal de antibióticos
-        </h1>
-
-        <p className="text-gray-600 text-lg">
-          Herramienta orientativa para ajuste general de antibióticos
-          según función renal estimada.
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold text-slate-900">MedTools Guardia</h1>
+        <p className="mt-2 text-slate-600 text-sm sm:text-base">
+          Calculadoras clínicas en español, diseñadas para el trabajo en guardia.
+          Uso exclusivamente educativo — no reemplaza el criterio médico.
         </p>
-      </section>
+      </div>
 
-      <section className="grid gap-6 md:grid-cols-2">
-        <div className="rounded-2xl border p-6 shadow-sm space-y-4">
-          <div className="space-y-2">
-            <label className="font-medium">
-              Clearance estimado (mL/min)
-            </label>
-
-            <input
-              type="number"
-              value={crcl}
-              onChange={(e) => setCrcl(Number(e.target.value))}
-              className="w-full rounded-xl border p-3"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="font-medium">Antibiótico</label>
-
-            <select
-              value={drug}
-              onChange={(e) =>
-                setDrug(e.target.value as AntibioticKey)
-              }
-              className="w-full rounded-xl border p-3"
-            >
-              {Object.keys(recommendations).map((item) => (
-                <option key={item}>{item}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div
-          className={`rounded-2xl border p-6 shadow-sm space-y-4 ${result.color}`}
-        >
-          <div className="space-y-2">
-            <h2 className="text-2xl font-semibold">
-              {drug}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {TOOLS.map((tool) => (
+          <Link
+            key={tool.href}
+            href={tool.href}
+            className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:border-teal-300 hover:shadow-md transition-all"
+          >
+            <span className="text-3xl">{tool.icon}</span>
+            <h2 className="mt-3 font-semibold text-slate-800 group-hover:text-teal-700 transition-colors">
+              {tool.title}
             </h2>
+            <p className="mt-1 text-sm text-slate-500">{tool.description}</p>
+          </Link>
+        ))}
+      </div>
 
-            <p>
-              <strong>Clearance:</strong> {crcl} mL/min
-            </p>
-
-            <p>
-              <strong>Categoría renal:</strong>{" "}
-              {result.category}
-            </p>
-          </div>
-
-          <div className="rounded-xl bg-white/70 p-4 border">
-            <p className="leading-relaxed">
-              {result.recommendation}
-            </p>
-          </div>
-
-          <div className="text-sm text-gray-700 space-y-2">
-            <p>
-              ⚠️ Confirmar siempre con guía local,
-              farmacología clínica y ficha técnica.
-            </p>
-
-            <p>
-              Esta herramienta no reemplaza criterio médico
-              ni constituye una prescripción definitiva.
-            </p>
-          </div>
-        </div>
-      </section>
-    </main>
+      <p className="text-xs text-slate-400">
+        Los resultados son orientativos. Verificar siempre con guías locales,
+        ficha técnica y criterio clínico del equipo tratante.
+      </p>
+    </div>
   );
 }
