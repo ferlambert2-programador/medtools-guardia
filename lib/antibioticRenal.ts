@@ -1,151 +1,301 @@
-export type AntibioticId =
-  | "amoxicilina"
-  | "amoxi_clavulanico"
-  | "cefazolina"
-  | "ceftriaxona"
-  | "ciprofloxacino"
-  | "levofloxacino"
-  | "piptazo"
-  | "meropenem"
-  | "vancomicina";
+export type RenalBand = "normal" | "moderate" | "severe" | "anuria";
 
-export const ANTIBIOTIC_OPTIONS: { id: AntibioticId; label: string }[] = [
-  { id: "amoxicilina", label: "Amoxicilina" },
-  { id: "amoxi_clavulanico", label: "Amoxicilina–ácido clavulánico" },
-  { id: "cefazolina", label: "Cefazolina" },
-  { id: "ceftriaxona", label: "Ceftriaxona" },
-  { id: "ciprofloxacino", label: "Ciprofloxacino" },
-  { id: "levofloxacino", label: "Levofloxacino" },
-  { id: "piptazo", label: "Piperacilina–tazobactam" },
-  { id: "meropenem", label: "Meropenem" },
-  { id: "vancomicina", label: "Vancomicina" },
+export function renalBandFromCrCl(crCl: number): RenalBand {
+  if (crCl >= 60) return "normal";
+  if (crCl >= 30) return "moderate";
+  if (crCl >= 10) return "severe";
+  return "anuria";
+}
+
+export const BAND_LABELS: Record<RenalBand, string> = {
+  normal: "Conservada (≥60 mL/min)",
+  moderate: "Moderada (30–59 mL/min)",
+  severe: "Severa (10–29 mL/min)",
+  anuria: "Anuria / Diálisis (<10 mL/min)",
+};
+
+export const BAND_COLORS: Record<RenalBand, string> = {
+  normal: "bg-green-50 border-green-200 text-green-900",
+  moderate: "bg-yellow-50 border-yellow-200 text-yellow-900",
+  severe: "bg-orange-50 border-orange-200 text-orange-900",
+  anuria: "bg-red-50 border-red-200 text-red-900",
+};
+
+export interface AntibioticEntry {
+  id: string;
+  label: string;
+  group: string;
+  doses: Record<RenalBand, string>;
+  note: string;
+}
+
+export const ANTIBIOTICS: AntibioticEntry[] = [
+  {
+    id: "pip-tazo",
+    label: "Piperacilina-Tazobactam",
+    group: "Penicilinas",
+    doses: {
+      normal: "4,5 g IV c/6 h",
+      moderate: "2,25 g IV c/6 h",
+      severe: "2,25 g IV c/8 h",
+      anuria: "2,25 g IV c/12 h",
+    },
+    note: "Máx ~16 g/día de piperacilina. Ajustar según foco e indicación.",
+  },
+  {
+    id: "ampi-sulbactam",
+    label: "Ampicilina-Sulbactam",
+    group: "Penicilinas",
+    doses: {
+      normal: "3 g IV c/6 h",
+      moderate: "3 g IV c/6 h",
+      severe: "3 g IV c/8 h",
+      anuria: "3 g IV c/12 h",
+    },
+    note: "Cobertura anaeróbica limitada vs B. fragilis. Vigilar hepatotoxicidad y rash.",
+  },
+  {
+    id: "meropenem",
+    label: "Meropenem",
+    group: "Carbapenems",
+    doses: {
+      normal: "1–2 g IV c/8 h",
+      moderate: "1 g IV c/8 h",
+      severe: "500 mg IV c/8 h",
+      anuria: "500 mg IV c/12 h",
+    },
+    note: "Meningitis: 2 g c/8 h (no reducir). No reducir en infecciones graves si ClCr ≥30.",
+  },
+  {
+    id: "imipenem",
+    label: "Imipenem-Cilastatina",
+    group: "Carbapenems",
+    doses: {
+      normal: "500 mg IV c/6 h",
+      moderate: "500 mg IV c/6 h",
+      severe: "500 mg IV c/8 h",
+      anuria: "250 mg IV c/12 h",
+    },
+    note: "Máx 4 g/día. Umbral convulsivo bajo; usar con precaución en SNC.",
+  },
+  {
+    id: "ertapenem",
+    label: "Ertapenem",
+    group: "Carbapenems",
+    doses: {
+      normal: "1 g IV/IM c/24 h",
+      moderate: "1 g IV c/24 h",
+      severe: "500 mg IV c/24 h",
+      anuria: "500 mg IV c/24 h",
+    },
+    note: "No cubre Pseudomonas ni Enterococcus. Útil en BLEE de foco abdominal/urinario.",
+  },
+  {
+    id: "ceftriaxona",
+    label: "Ceftriaxona",
+    group: "Cefalosporinas",
+    doses: {
+      normal: "1–2 g IV c/24 h",
+      moderate: "1–2 g IV c/24 h",
+      severe: "1 g IV c/24 h",
+      anuria: "1 g IV c/24 h",
+    },
+    note: "Sin ajuste renal significativo. Precaución: pseudolitiasis biliar, hipoprotrombinemia.",
+  },
+  {
+    id: "cefepima",
+    label: "Cefepima",
+    group: "Cefalosporinas",
+    doses: {
+      normal: "2 g IV c/8–12 h",
+      moderate: "2 g IV c/12 h",
+      severe: "1 g IV c/24 h",
+      anuria: "1 g IV c/24 h",
+    },
+    note: "Neurotoxicidad (encefalopatía) a dosis altas con IRC: vigilar.",
+  },
+  {
+    id: "ceftazidima",
+    label: "Ceftazidima",
+    group: "Cefalosporinas",
+    doses: {
+      normal: "2 g IV c/8 h",
+      moderate: "2 g IV c/12 h",
+      severe: "1 g IV c/24 h",
+      anuria: "1 g IV c/48 h",
+    },
+    note: "Cubre Pseudomonas. No reducir en fibrosis quística.",
+  },
+  {
+    id: "vancomicina",
+    label: "Vancomicina",
+    group: "Glucopéptidos",
+    doses: {
+      normal: "15–20 mg/kg IV c/8–12 h (carga: 25–30 mg/kg)",
+      moderate: "15 mg/kg IV c/24 h",
+      severe: "15 mg/kg IV c/48–72 h",
+      anuria: "Según TDM — no usar sin monitoreo de niveles",
+    },
+    note: "Objetivo AUC 400–600 mg·h/L (o trough 15–20 mg/L). TDM obligatorio.",
+  },
+  {
+    id: "gentamicina",
+    label: "Gentamicina",
+    group: "Aminoglucósidos",
+    doses: {
+      normal: "5–7 mg/kg IV c/24 h",
+      moderate: "3–5 mg/kg IV c/36 h",
+      severe: "2–3 mg/kg IV c/48 h",
+      anuria: "Evitar o usar con TDM estricto",
+    },
+    note: "TDM: pico 20–30, valle <2 mg/L. Nefro y ototóxico.",
+  },
+  {
+    id: "amikacina",
+    label: "Amikacina",
+    group: "Aminoglucósidos",
+    doses: {
+      normal: "15–20 mg/kg IV c/24 h",
+      moderate: "7,5 mg/kg IV c/24 h",
+      severe: "7,5 mg/kg IV c/48 h",
+      anuria: "Evitar o usar con TDM estricto",
+    },
+    note: "TDM: pico 50–70, valle <10 mg/L. Reservar para MDR.",
+  },
+  {
+    id: "ciprofloxacino",
+    label: "Ciprofloxacino",
+    group: "Fluoroquinolonas",
+    doses: {
+      normal: "400 mg IV c/12 h o 500–750 mg VO c/12 h",
+      moderate: "400 mg IV c/12 h",
+      severe: "400 mg IV c/24 h",
+      anuria: "400 mg IV c/24 h",
+    },
+    note: "Cubre Pseudomonas. Precaución: tendinitis, prolongación QT.",
+  },
+  {
+    id: "levofloxacino",
+    label: "Levofloxacino",
+    group: "Fluoroquinolonas",
+    doses: {
+      normal: "750 mg VO/IV c/24 h",
+      moderate: "750 mg carga, luego 500 mg c/24 h",
+      severe: "750 mg carga, luego 500 mg c/48 h",
+      anuria: "750 mg carga, luego 500 mg c/48 h",
+    },
+    note: "Mejor cobertura antineumocócica. Precaución: QT, tendinitis.",
+  },
+  {
+    id: "metronidazol",
+    label: "Metronidazol",
+    group: "Nitroimidazoles",
+    doses: {
+      normal: "500 mg IV c/8 h",
+      moderate: "500 mg IV c/8 h",
+      severe: "500 mg IV c/12 h",
+      anuria: "250 mg IV c/12 h",
+    },
+    note: "Sin ajuste renal mayor. Cobertura anaeróbica excelente.",
+  },
+  {
+    id: "linezolid",
+    label: "Linezolid",
+    group: "Oxazolidinonas",
+    doses: {
+      normal: "600 mg IV/VO c/12 h",
+      moderate: "600 mg IV/VO c/12 h",
+      severe: "600 mg IV/VO c/12 h",
+      anuria: "600 mg IV/VO c/12 h",
+    },
+    note: "Sin ajuste renal. Mielosupresión con uso >14 días. Interacción serotoninérgica.",
+  },
+  {
+    id: "daptomicina",
+    label: "Daptomicina",
+    group: "Lipopéptidos",
+    doses: {
+      normal: "6–10 mg/kg IV c/24 h",
+      moderate: "6 mg/kg IV c/48 h",
+      severe: "6 mg/kg IV c/48 h",
+      anuria: "6 mg/kg IV c/72 h",
+    },
+    note: "Inactiva en neumonía (inactivada por surfactante). Monitorear CPK.",
+  },
+  {
+    id: "tigeciclina",
+    label: "Tigeciclina",
+    group: "Glicilciclinas",
+    doses: {
+      normal: "100 mg IV carga, luego 50 mg c/12 h",
+      moderate: "100 mg IV carga, luego 50 mg c/12 h",
+      severe: "100 mg IV carga, luego 50 mg c/12 h",
+      anuria: "100 mg IV carga, luego 50 mg c/12 h",
+    },
+    note: "Sin ajuste renal. Asociada a mayor mortalidad vs otros ATB en metaanálisis.",
+  },
+  {
+    id: "colistina",
+    label: "Colistina (Polimixina E)",
+    group: "Polimixinas",
+    doses: {
+      normal: "2,5 mg/kg (CBA) IV c/12 h",
+      moderate: "2,5 mg/kg (CBA) IV c/12 h",
+      severe: "1,5 mg/kg (CBA) IV c/12 h",
+      anuria: "1 mg/kg (CBA) IV c/12 h",
+    },
+    note: "TDM recomendado. Nefro y neurotóxico. Solo para MDR sin alternativas.",
+  },
+  {
+    id: "fluconazol",
+    label: "Fluconazol",
+    group: "Antifúngicos",
+    doses: {
+      normal: "400–800 mg IV/VO c/24 h",
+      moderate: "200–400 mg IV c/24 h",
+      severe: "200 mg IV c/48 h",
+      anuria: "200 mg IV c/72 h",
+    },
+    note: "Candidiasis invasiva: 400 mg/día. Meningitis criptocócica: 800 mg/día.",
+  },
+  {
+    id: "voriconazol",
+    label: "Voriconazol",
+    group: "Antifúngicos",
+    doses: {
+      normal: "6 mg/kg IV c/12 h ×2, luego 4 mg/kg c/12 h",
+      moderate: "6 mg/kg IV c/12 h ×2, luego 4 mg/kg c/12 h",
+      severe: "Preferir vía oral (vehículo IV acumula)",
+      anuria: "Preferir vía oral (vehículo IV acumula)",
+    },
+    note: "TDM obligatorio (objetivo 1–5,5 mg/L). Hepatotóxico; vigilar visión.",
+  },
+  {
+    id: "anfotericina-b",
+    label: "Anfotericina B liposomal",
+    group: "Antifúngicos",
+    doses: {
+      normal: "3–5 mg/kg IV c/24 h",
+      moderate: "3–5 mg/kg IV c/24 h",
+      severe: "3 mg/kg IV c/24 h",
+      anuria: "3 mg/kg IV c/24 h",
+    },
+    note: "Nefrotóxica: prehidratación obligatoria. Monitorear K⁺, Mg²⁺ y creatinina.",
+  },
+  {
+    id: "aciclovir",
+    label: "Aciclovir",
+    group: "Antivirales",
+    doses: {
+      normal: "10 mg/kg IV c/8 h (HSV) / 15 mg/kg c/8 h (VZV)",
+      moderate: "10 mg/kg IV c/12 h",
+      severe: "10 mg/kg IV c/24 h",
+      anuria: "5 mg/kg IV c/24 h",
+    },
+    note: "Hidratar bien para evitar cristaluria. Vigilar neurotoxicidad.",
+  },
 ];
 
-/**
- * Textos educativos muy resumidos. Las dosis concretas dependen de indicación,
- * vía, peso, edad, niveles séricos y ficha técnica vigente en tu jurisdicción.
- */
-export function renalGuidanceEs(
-  id: AntibioticId,
-  crClMlMin: number,
-): { title: string; bullets: string[] } {
-  const gte50 = crClMlMin >= 50;
-  const gte30 = crClMlMin >= 30;
-  const gte15 = crClMlMin >= 15;
-
-  const band =
-    crClMlMin <= 0 || Number.isNaN(crClMlMin)
-      ? "sin_datos"
-      : gte50
-        ? ">=50"
-        : gte30
-          ? "30_49"
-          : gte15
-            ? "15_29"
-            : "<15";
-
-  const prefix =
-    "Esto es orientación general; confirma siempre con guía local y ficha técnica.";
-
-  switch (id) {
-    case "amoxicilina":
-      return {
-        title: "Amoxicilina",
-        bullets: [
-          prefix,
-          "En función renal conservada suele tolerarse bien.",
-          band === "30_49" || band === "15_29" || band === "<15"
-            ? "Con depuración reducida puede ser necesario espaciar dosis o reducir frecuencia según indicación y referencias."
-            : "Sin ajustes habituales salvo situaciones extremas según criterio clínico.",
-        ],
-      };
-    case "amoxi_clavulanico":
-      return {
-        title: "Amoxicilina–ácido clavulánico",
-        bullets: [
-          prefix,
-          "El componente clavulánico acumula con mayor facilidad si la depuración cae.",
-          band === "30_49"
-            ? "Valorar reducción de frecuencia o formulaciones alternativas según guía."
-            : band === "15_29" || band === "<15"
-              ? "Suele recomendarse cautela importante: ajuste de intervalo/dosis o cambio de esquema según protocolo."
-              : "Esquema estándar en depuración conservada.",
-        ],
-      };
-    case "cefazolina":
-      return {
-        title: "Cefazolina",
-        bullets: [
-          prefix,
-          "Muchos esquemas mantienen intervalos similares con depuración leve-moderada.",
-          band === "15_29" || band === "<15"
-            ? "Puede requerirse extensión del intervalo entre dosis o reducción según indicación y fuente consultada."
-            : "Ajuste habitualmente modesto si la depuración es ≥30 mL/min.",
-        ],
-      };
-    case "ceftriaxona":
-      return {
-        title: "Ceftriaxona",
-        bullets: [
-          prefix,
-          "En adultos con función renal estable, los ajustes por creatinina suelen ser menos críticos que con otras cefalosporinas.",
-          "Precaución acumulativa si hay comorbilidad hepática o coadministración con fármacos competidores de secreción tubular.",
-        ],
-      };
-    case "ciprofloxacino":
-      return {
-        title: "Ciprofloxacino",
-        bullets: [
-          prefix,
-          band === "30_49"
-            ? "Con frecuencia se recomienda reducir dosis total diaria o espaciar administraciones."
-            : band === "15_29" || band === "<15"
-              ? "Suele requerirse reducción marcada o intervalos más largos; revisar ficha técnica."
-              : "Dosis habituales en depuración conservada.",
-        ],
-      };
-    case "levofloxacino":
-      return {
-        title: "Levofloxacino",
-        bullets: [
-          prefix,
-          !gte50
-            ? "Los ajustes por CrCl son habituales: menor dosis diaria o intervalos más largos según tabla del fabricante."
-            : "En depuración ≥50 mL/min suele emplearse pauta estándar para la mayoría de indicaciones.",
-        ],
-      };
-    case "piptazo":
-      return {
-        title: "Piperacilina–tazobactam",
-        bullets: [
-          prefix,
-          band === "30_49"
-            ? "A menudo se extiende el intervalo entre dosis respecto a la pauta estándar."
-            : band === "15_29" || band === "<15"
-              ? "Suele requerirse intervalo más largo o dosis reducida; confirma con guía de hospital y ficha técnica."
-              : "Pautas estándar de intervalo en depuración ≥40–50 mL/min según referencia.",
-        ],
-      };
-    case "meropenem":
-      return {
-        title: "Meropenem",
-        bullets: [
-          prefix,
-          band === "15_29" || band === "<15"
-            ? "Frecuente prolongar intervalo entre dosis o reducir dosis diaria total."
-            : "Con depuración ≥30–50 mL/min muchas pautas se acercan a lo estándar según indicación.",
-        ],
-      };
-    case "vancomicina":
-      return {
-        title: "Vancomicina",
-        bullets: [
-          prefix,
-          "El ajuste se basa preferentemente en niveles (trough) y función renal dinámica, no solo en una fórmula aislada.",
-          "En insuficiencia renal o riesgo de acumulación, monitorización estrecha y protocolo de farmacia clínica.",
-        ],
-      };
-    default:
-      return { title: "—", bullets: [prefix] };
-  }
-}
+export const ANTIBIOTIC_GROUPS = [
+  ...new Set(ANTIBIOTICS.map((a) => a.group)),
+];
