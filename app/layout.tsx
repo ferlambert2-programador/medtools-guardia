@@ -31,12 +31,18 @@ export const metadata: Metadata = {
     "medicina",
     "español",
   ],
+  icons: {
+    icon: "/icon.png",
+    apple: "/icon.png",
+    shortcut: "/icon.png",
+  },
   openGraph: {
     title: "MedTools Guardia",
     description:
       "Herramientas médicas online en español: IMC, creatinina y ajustes renales.",
     locale: "es_ES",
     type: "website",
+    images: [{ url: "/icon.png" }],
   },
 };
 
