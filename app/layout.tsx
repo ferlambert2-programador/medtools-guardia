@@ -31,6 +31,9 @@ export const metadata: Metadata = {
     "medicina",
     "español",
   ],
+  verification: {
+    google: "bf7h36NClgZLgPoBQGFVeTR3vJHx2ctiZBnUO-NtIe4",
+  },
   icons: {
     icon: "/icon.png",
     apple: "/icon.png",
