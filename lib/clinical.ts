@@ -14,6 +14,10 @@ export function bmiCategoryEs(bmi: number): string {
   return "Obesidad grado III (mórbida)";
 }
 
+/**
+ * Cockcroft–Gault (adultos). Scr en mg/dL, peso kg, edad años.
+ * Devuelve mL/min (no normalizado a 1,73 m²).
+ */
 export function cockcroftGaultMlMin(params: {
   ageYears: number;
   weightKg: number;
@@ -26,6 +30,10 @@ export function cockcroftGaultMlMin(params: {
   return female ? base * 0.85 : base;
 }
 
+/**
+ * CKD-EPI 2021 sin raza. Scr en mg/dL, edad en años.
+ * Devuelve mL/min/1.73 m².
+ */
 export function ckdEpi2021(params: {
   ageYears: number;
   scrMgDl: number;
@@ -44,6 +52,10 @@ export function ckdEpi2021(params: {
   return female ? base * 1.012 : base;
 }
 
+/**
+ * MDRD 4 variables (IDMS-trazable). Scr en mg/dL, edad en años.
+ * Devuelve mL/min/1.73 m².
+ */
 export function mdrd4(params: {
   ageYears: number;
   scrMgDl: number;
@@ -79,4 +91,32 @@ export function egfrStageLabel(stage: EgfrStage): string {
     G5: "Terminal (<15)",
   };
   return labels[stage];
+}
+
+export type RifleKdigoStage = "sin_ira" | "estadio1" | "estadio2" | "estadio3";
+
+export function classifyRifleKdigo(params: {
+  baseCr: number;
+  actualCr: number;
+  urineVolumeMl?: number;
+  weightKg?: number;
+  hoursUrine?: number;
+}): { rifle: string; kdigo: string; stage: RifleKdigoStage } {
+  const { baseCr, actualCr, urineVolumeMl, weightKg, hoursUrine = 6 } = params;
+  const ratio = actualCr / baseCr;
+  const urineRate =
+    urineVolumeMl && weightKg
+      ? urineVolumeMl / hoursUrine / weightKg
+      : undefined;
+
+  if (ratio >= 3 || actualCr >= 4 || (urineRate !== undefined && urineRate < 0.3)) {
+    return { rifle: "Falla (F)", kdigo: "Estadio 3", stage: "estadio3" };
+  }
+  if (ratio >= 2 || (urineRate !== undefined && urineRate < 0.5 && hoursUrine >= 12)) {
+    return { rifle: "Injuria (I)", kdigo: "Estadio 2", stage: "estadio2" };
+  }
+  if (ratio >= 1.5 || (urineRate !== undefined && urineRate < 0.5)) {
+    return { rifle: "Riesgo (R)", kdigo: "Estadio 1", stage: "estadio1" };
+  }
+  return { rifle: "Sin injuria renal aguda", kdigo: "Sin IRA", stage: "sin_ira" };
 }
