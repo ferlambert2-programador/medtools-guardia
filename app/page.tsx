@@ -4,20 +4,56 @@ const TOOLS = [
   {
     href: "/clearance-creatinina",
     icon: "🫘",
-    title: "Clearance de creatinina",
-    description: "Cockcroft–Gault y CKD-EPI 2021 con estadificación renal",
+    title: "Función renal",
+    description: "Cockcroft–Gault, CKD-EPI 2021 y MDRD con estadificación",
   },
   {
     href: "/ajuste-antibioticos",
     icon: "💊",
-    title: "Ajuste de antibióticos",
+    title: "Antibióticos",
     description: "22 antibióticos con dosis ajustadas por función renal",
+  },
+  {
+    href: "/scores-uci",
+    icon: "🏥",
+    title: "Scores UCI",
+    description: "APACHE II, SOFA, qSOFA, Glasgow, NIHSS",
+  },
+  {
+    href: "/infectologia",
+    icon: "🦠",
+    title: "Infectología",
+    description: "CURB-65 para neumonía · Sepsis-3",
+  },
+  {
+    href: "/cardiovascular",
+    icon: "❤️",
+    title: "Cardiovascular",
+    description: "CHA₂DS₂-VASc, HAS-BLED, Killip-Kimball",
+  },
+  {
+    href: "/nutricion",
+    icon: "🍎",
+    title: "Nutrición",
+    description: "Peso ideal (Broca) · Gasto energético (Harris-Benedict)",
+  },
+  {
+    href: "/respiratorio",
+    icon: "🫁",
+    title: "Respiratorio",
+    description: "Relación PaO₂/FiO₂ · Criterios de Berlín (SDRA)",
+  },
+  {
+    href: "/nefrologia",
+    icon: "💧",
+    title: "Nefrología",
+    description: "RIFLE/KDIGO · Anion gap · Osmolaridad · Gradiente A-a",
   },
   {
     href: "/imc",
     icon: "⚖️",
-    title: "Índice de masa corporal",
-    description: "IMC con categorías OMS para adultos",
+    title: "IMC",
+    description: "Índice de masa corporal con categorías OMS",
   },
 ];
 
