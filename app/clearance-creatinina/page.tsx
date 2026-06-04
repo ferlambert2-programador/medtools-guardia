@@ -5,6 +5,7 @@ import { MedicalDisclaimer } from "@/components/MedicalDisclaimer";
 import {
   cockcroftGaultMlMin,
   ckdEpi2021,
+  mdrd4,
   egfrStage,
   egfrStageLabel,
 } from "@/lib/clinical";
@@ -32,11 +33,15 @@ function ResultCard({
   );
 }
 
+const INPUT =
+  "w-full rounded-xl border border-slate-200 px-3 py-2.5 text-base outline-none focus:ring-2 focus:ring-teal-500/40";
+
 export default function ClearancePage() {
   const [age, setAge] = useState("");
   const [weight, setWeight] = useState("");
   const [scr, setScrRaw] = useState("");
   const [female, setFemale] = useState(false);
+  const [blackRace, setBlackRace] = useState(false);
 
   const parsed = useMemo(() => {
     const ageYears = Number(age.replace(",", "."));
@@ -55,8 +60,14 @@ export default function ClearancePage() {
     [parsed.ageYears, parsed.scrMgDl, female],
   );
 
+  const mdrdResult = useMemo(
+    () => mdrd4({ ageYears: parsed.ageYears, scrMgDl: parsed.scrMgDl, female, blackRace }),
+    [parsed.ageYears, parsed.scrMgDl, female, blackRace],
+  );
+
   const crclOk = age && weight && scr && !Number.isNaN(crcl) && crcl > 0;
   const ckdOk = age && scr && !Number.isNaN(ckdEpiResult) && ckdEpiResult > 0;
+  const mdrdOk = age && scr && !Number.isNaN(mdrdResult) && mdrdResult > 0;
 
   return (
     <div className="space-y-6">
@@ -65,8 +76,7 @@ export default function ClearancePage() {
           Clearance de creatinina
         </h1>
         <p className="mt-2 text-slate-600 text-sm sm:text-base">
-          Cockcroft–Gault (mL/min, no normalizado) para dosificación y
-          CKD-EPI 2021 (mL/min/1,73 m²) para estadificación renal.
+          Cockcroft–Gault (mL/min) para dosificación · CKD-EPI 2021 y MDRD (mL/min/1,73 m²) para estadificación.
         </p>
       </div>
 
@@ -75,7 +85,7 @@ export default function ClearancePage() {
           <span className="text-sm font-medium text-slate-700">Edad (años)</span>
           <input
             inputMode="numeric"
-            className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-base outline-none focus:ring-2 focus:ring-teal-500/40"
+            className={INPUT}
             value={age}
             onChange={(e) => setAge(e.target.value)}
             placeholder="p. ej. 68"
@@ -89,7 +99,7 @@ export default function ClearancePage() {
           </span>
           <input
             inputMode="decimal"
-            className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-base outline-none focus:ring-2 focus:ring-teal-500/40"
+            className={INPUT}
             value={weight}
             onChange={(e) => setWeight(e.target.value)}
             placeholder="p. ej. 70"
@@ -102,25 +112,37 @@ export default function ClearancePage() {
           </span>
           <input
             inputMode="decimal"
-            className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-base outline-none focus:ring-2 focus:ring-teal-500/40"
+            className={INPUT}
             value={scr}
             onChange={(e) => setScrRaw(e.target.value)}
             placeholder="p. ej. 1,1"
           />
         </label>
 
-        <label className="flex items-center gap-3 text-sm text-slate-700">
-          <input
-            type="checkbox"
-            checked={female}
-            onChange={(e) => setFemale(e.target.checked)}
-            className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
-          />
-          Sexo femenino
-        </label>
+        <div className="flex flex-wrap gap-4">
+          <label className="flex items-center gap-3 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={female}
+              onChange={(e) => setFemale(e.target.checked)}
+              className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+            />
+            Sexo femenino
+          </label>
+          <label className="flex items-center gap-3 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={blackRace}
+              onChange={(e) => setBlackRace(e.target.checked)}
+              className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+            />
+            Raza negra{" "}
+            <span className="text-slate-400">(solo MDRD)</span>
+          </label>
+        </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-3">
         <ResultCard
           label="Cockcroft–Gault"
           value={crclOk ? Math.round(crcl).toString() : "—"}
@@ -128,7 +150,7 @@ export default function ClearancePage() {
           sub={
             crclOk
               ? `Estadio ${egfrStage(crcl)} · ${egfrStageLabel(egfrStage(crcl))}`
-              : "Completá edad, peso y creatinina"
+              : "Necesita edad, peso y Cr"
           }
         />
         <ResultCard
@@ -138,17 +160,30 @@ export default function ClearancePage() {
           sub={
             ckdOk
               ? `Estadio ${egfrStage(ckdEpiResult)} · ${egfrStageLabel(egfrStage(ckdEpiResult))}`
-              : "Completá edad y creatinina"
+              : "Necesita edad y Cr"
+          }
+        />
+        <ResultCard
+          label="MDRD-4"
+          value={mdrdOk ? Math.round(mdrdResult).toString() : "—"}
+          unit="mL/min/1,73 m²"
+          sub={
+            mdrdOk
+              ? `Estadio ${egfrStage(mdrdResult)} · ${egfrStageLabel(egfrStage(mdrdResult))}`
+              : "Necesita edad y Cr"
           }
         />
       </div>
 
       <div className="rounded-xl bg-slate-50 border border-slate-200 px-4 py-3 text-xs text-slate-500 space-y-1">
         <p>
-          <strong>Cockcroft–Gault</strong> se recomienda para ajuste de dosis de fármacos.
+          <strong>Cockcroft–Gault</strong> se recomienda para ajuste de dosis de fármacos (no normalizado a superficie corporal).
         </p>
         <p>
-          <strong>CKD-EPI 2021</strong> es el estándar actual para estadificación de ERC (KDIGO 2022).
+          <strong>CKD-EPI 2021</strong> es el estándar actual para estadificación de ERC (KDIGO 2022), sin corrección por raza.
+        </p>
+        <p>
+          <strong>MDRD-4</strong> sigue siendo de referencia histórica; tiende a subestimar la TFG en valores normales.
         </p>
       </div>
 
