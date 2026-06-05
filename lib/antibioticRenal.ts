@@ -26,6 +26,8 @@ export interface AntibioticEntry {
   label: string;
   group: string;
   doses: Record<RenalBand, string>;
+  /** Dosis de refuerzo a administrar al finalizar cada sesión de hemodiálisis */
+  dialysisSupplement?: string;
   note: string;
 }
 
@@ -40,6 +42,7 @@ export const ANTIBIOTICS: AntibioticEntry[] = [
       severe: "2,25 g IV c/8 h",
       anuria: "2,25 g IV c/12 h",
     },
+    dialysisSupplement: "0,75 g IV luego de cada sesión de HD",
     note: "Máx ~16 g/día de piperacilina. Ajustar según foco e indicación.",
   },
   {
@@ -52,6 +55,7 @@ export const ANTIBIOTICS: AntibioticEntry[] = [
       severe: "3 g IV c/8 h",
       anuria: "3 g IV c/12 h",
     },
+    dialysisSupplement: "3 g IV al finalizar cada sesión de HD",
     note: "Cobertura anaeróbica limitada vs B. fragilis. Vigilar hepatotoxicidad y rash.",
   },
   {
@@ -64,6 +68,7 @@ export const ANTIBIOTICS: AntibioticEntry[] = [
       severe: "500 mg IV c/8 h",
       anuria: "500 mg IV c/12 h",
     },
+    dialysisSupplement: "500 mg IV luego de cada sesión de HD",
     note: "Meningitis: 2 g c/8 h (no reducir). No reducir en infecciones graves si ClCr ≥30.",
   },
   {
@@ -76,6 +81,7 @@ export const ANTIBIOTICS: AntibioticEntry[] = [
       severe: "500 mg IV c/8 h",
       anuria: "250 mg IV c/12 h",
     },
+    dialysisSupplement: "250 mg IV luego de cada sesión de HD",
     note: "Máx 4 g/día. Umbral convulsivo bajo; usar con precaución en SNC.",
   },
   {
@@ -88,6 +94,7 @@ export const ANTIBIOTICS: AntibioticEntry[] = [
       severe: "500 mg IV c/24 h",
       anuria: "500 mg IV c/24 h",
     },
+    dialysisSupplement: "150 mg IV luego de sesión de HD el mismo día de la dosis",
     note: "No cubre Pseudomonas ni Enterococcus. Útil en BLEE de foco abdominal/urinario.",
   },
   {
@@ -100,7 +107,7 @@ export const ANTIBIOTICS: AntibioticEntry[] = [
       severe: "1 g IV c/24 h",
       anuria: "1 g IV c/24 h",
     },
-    note: "Sin ajuste renal significativo. Precaución: pseudolitiasis biliar, hipoprotrombinemia.",
+    note: "Sin ajuste renal significativo. Escasa eliminación por HD; no requiere dosis de refuerzo. Precaución: pseudolitiasis biliar, hipoprotrombinemia.",
   },
   {
     id: "cefepima",
@@ -112,6 +119,7 @@ export const ANTIBIOTICS: AntibioticEntry[] = [
       severe: "1 g IV c/24 h",
       anuria: "1 g IV c/24 h",
     },
+    dialysisSupplement: "1 g IV luego de cada sesión de HD",
     note: "Neurotoxicidad (encefalopatía) a dosis altas con IRC: vigilar.",
   },
   {
@@ -124,6 +132,7 @@ export const ANTIBIOTICS: AntibioticEntry[] = [
       severe: "1 g IV c/24 h",
       anuria: "1 g IV c/48 h",
     },
+    dialysisSupplement: "1 g IV luego de cada sesión de HD",
     note: "Cubre Pseudomonas. No reducir en fibrosis quística.",
   },
   {
@@ -136,6 +145,7 @@ export const ANTIBIOTICS: AntibioticEntry[] = [
       severe: "15 mg/kg IV c/48–72 h",
       anuria: "Según TDM — no usar sin monitoreo de niveles",
     },
+    dialysisSupplement: "500 mg–1 g IV post-HD (o según nivel post-sesión; objetivo trough >10 mg/L)",
     note: "Objetivo AUC 400–600 mg·h/L (o trough 15–20 mg/L). TDM obligatorio.",
   },
   {
@@ -148,6 +158,7 @@ export const ANTIBIOTICS: AntibioticEntry[] = [
       severe: "2–3 mg/kg IV c/48 h",
       anuria: "Evitar o usar con TDM estricto",
     },
+    dialysisSupplement: "Dosis única post-HD según nivel (pico post-HD <1 mg/L antes de reiniciar)",
     note: "TDM: pico 20–30, valle <2 mg/L. Nefro y ototóxico.",
   },
   {
@@ -160,6 +171,7 @@ export const ANTIBIOTICS: AntibioticEntry[] = [
       severe: "7,5 mg/kg IV c/48 h",
       anuria: "Evitar o usar con TDM estricto",
     },
+    dialysisSupplement: "Dosis única post-HD según nivel (valle <10 mg/L antes de reiniciar)",
     note: "TDM: pico 50–70, valle <10 mg/L. Reservar para MDR.",
   },
   {
@@ -172,7 +184,7 @@ export const ANTIBIOTICS: AntibioticEntry[] = [
       severe: "400 mg IV c/24 h",
       anuria: "400 mg IV c/24 h",
     },
-    note: "Cubre Pseudomonas. Precaución: tendinitis, prolongación QT.",
+    note: "Cubre Pseudomonas. Escasa eliminación por HD; no requiere dosis de refuerzo rutinaria. Precaución: tendinitis, prolongación QT.",
   },
   {
     id: "levofloxacino",
@@ -184,7 +196,7 @@ export const ANTIBIOTICS: AntibioticEntry[] = [
       severe: "750 mg carga, luego 500 mg c/48 h",
       anuria: "750 mg carga, luego 500 mg c/48 h",
     },
-    note: "Mejor cobertura antineumocócica. Precaución: QT, tendinitis.",
+    note: "Mejor cobertura antineumocócica. Escasa eliminación por HD; no requiere dosis de refuerzo. Precaución: QT, tendinitis.",
   },
   {
     id: "metronidazol",
@@ -196,6 +208,7 @@ export const ANTIBIOTICS: AntibioticEntry[] = [
       severe: "500 mg IV c/12 h",
       anuria: "250 mg IV c/12 h",
     },
+    dialysisSupplement: "500 mg IV luego de cada sesión de HD",
     note: "Sin ajuste renal mayor. Cobertura anaeróbica excelente.",
   },
   {
@@ -208,7 +221,7 @@ export const ANTIBIOTICS: AntibioticEntry[] = [
       severe: "600 mg IV/VO c/12 h",
       anuria: "600 mg IV/VO c/12 h",
     },
-    note: "Sin ajuste renal. Mielosupresión con uso >14 días. Interacción serotoninérgica.",
+    note: "Sin ajuste renal. Mínima eliminación por HD; no requiere dosis de refuerzo. Mielosupresión con uso >14 días. Interacción serotoninérgica.",
   },
   {
     id: "daptomicina",
@@ -220,6 +233,7 @@ export const ANTIBIOTICS: AntibioticEntry[] = [
       severe: "6 mg/kg IV c/48 h",
       anuria: "6 mg/kg IV c/72 h",
     },
+    dialysisSupplement: "Programar dosis post-HD en días de diálisis (HD elimina ~50% de la dosis)",
     note: "Inactiva en neumonía (inactivada por surfactante). Monitorear CPK.",
   },
   {
@@ -232,7 +246,7 @@ export const ANTIBIOTICS: AntibioticEntry[] = [
       severe: "100 mg IV carga, luego 50 mg c/12 h",
       anuria: "100 mg IV carga, luego 50 mg c/12 h",
     },
-    note: "Sin ajuste renal. Asociada a mayor mortalidad vs otros ATB en metaanálisis.",
+    note: "Sin ajuste renal. Mínima eliminación por HD; no requiere dosis de refuerzo. Asociada a mayor mortalidad vs otros ATB en metaanálisis.",
   },
   {
     id: "colistina",
@@ -244,6 +258,7 @@ export const ANTIBIOTICS: AntibioticEntry[] = [
       severe: "1,5 mg/kg (CBA) IV c/12 h",
       anuria: "1 mg/kg (CBA) IV c/12 h",
     },
+    dialysisSupplement: "Variable según TDM; aproximadamente 1 mg/kg (CBA) post-HD",
     note: "TDM recomendado. Nefro y neurotóxico. Solo para MDR sin alternativas.",
   },
   {
@@ -256,6 +271,7 @@ export const ANTIBIOTICS: AntibioticEntry[] = [
       severe: "200 mg IV c/48 h",
       anuria: "200 mg IV c/72 h",
     },
+    dialysisSupplement: "200 mg IV luego de cada sesión de HD",
     note: "Candidiasis invasiva: 400 mg/día. Meningitis criptocócica: 800 mg/día.",
   },
   {
@@ -268,7 +284,7 @@ export const ANTIBIOTICS: AntibioticEntry[] = [
       severe: "Preferir vía oral (vehículo IV acumula)",
       anuria: "Preferir vía oral (vehículo IV acumula)",
     },
-    note: "TDM obligatorio (objetivo 1–5,5 mg/L). Hepatotóxico; vigilar visión.",
+    note: "TDM obligatorio (objetivo 1–5,5 mg/L). Vía oral preferible en diálisis (vehículo IV se acumula). Mínima eliminación por HD; no requiere dosis de refuerzo. Hepatotóxico; vigilar visión.",
   },
   {
     id: "anfotericina-b",
@@ -280,7 +296,7 @@ export const ANTIBIOTICS: AntibioticEntry[] = [
       severe: "3 mg/kg IV c/24 h",
       anuria: "3 mg/kg IV c/24 h",
     },
-    note: "Nefrotóxica: prehidratación obligatoria. Monitorear K⁺, Mg²⁺ y creatinina.",
+    note: "Nefrotóxica: prehidratación obligatoria. Mínima eliminación por HD; no requiere dosis de refuerzo. Monitorear K⁺, Mg²⁺ y creatinina.",
   },
   {
     id: "aciclovir",
@@ -292,6 +308,7 @@ export const ANTIBIOTICS: AntibioticEntry[] = [
       severe: "10 mg/kg IV c/24 h",
       anuria: "5 mg/kg IV c/24 h",
     },
+    dialysisSupplement: "5 mg/kg IV luego de cada sesión de HD",
     note: "Hidratar bien para evitar cristaluria. Vigilar neurotoxicidad.",
   },
 ];
