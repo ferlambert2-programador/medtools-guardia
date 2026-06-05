@@ -86,13 +86,26 @@ export default function AjusteAntibioticosPage() {
             </p>
           </div>
 
-          <div className="rounded-xl bg-white/60 border border-current/10 p-4 space-y-1">
-            <p className="text-xs font-semibold uppercase tracking-wide opacity-60">
-              Dosis recomendada
-            </p>
-            <p className="text-lg font-bold leading-snug">
-              {antibiotic.doses[band]}
-            </p>
+          <div className="rounded-xl bg-white/60 border border-current/10 p-4 space-y-3">
+            <div className="space-y-1">
+              <p className="text-xs font-semibold uppercase tracking-wide opacity-60">
+                {band === "anuria" ? "Dosis habitual (mantenimiento)" : "Dosis recomendada"}
+              </p>
+              <p className="text-lg font-bold leading-snug">
+                {antibiotic.doses[band]}
+              </p>
+            </div>
+
+            {band === "anuria" && antibiotic.dialysisSupplement && (
+              <div className="border-t border-current/10 pt-3 space-y-1">
+                <p className="text-xs font-semibold uppercase tracking-wide opacity-60">
+                  Dosis de refuerzo post-hemodiálisis
+                </p>
+                <p className="text-lg font-bold leading-snug">
+                  {antibiotic.dialysisSupplement}
+                </p>
+              </div>
+            )}
           </div>
 
           <p className="text-sm opacity-80">
