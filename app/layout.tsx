@@ -40,6 +40,9 @@ export const metadata: Metadata = {
     apple: "/icon.png",
     shortcut: "/icon.png",
   },
+  other: {
+    "google-adsense-account": "ca-pub-7070621016074264",
+  },
   openGraph: {
     title: "MedTools Guardia",
     description:
