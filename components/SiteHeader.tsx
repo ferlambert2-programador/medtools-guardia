@@ -13,6 +13,7 @@ const NAV = [
   { href: "/respiratorio", label: "Respiratorio" },
   { href: "/nefrologia", label: "Nefrología" },
   { href: "/imc", label: "IMC" },
+  { href: "/medio-interno", label: "Medio Interno" },
 ];
 
 export function SiteHeader() {
