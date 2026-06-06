@@ -55,6 +55,12 @@ const TOOLS = [
     title: "IMC",
     description: "Índice de masa corporal con categorías OMS",
   },
+  {
+    href: "/medio-interno",
+    icon: "💨",
+    title: "Medio Interno",
+    description: "Gasometría · Ácido-base · Anion gap · P/F · Índice de oxigenación",
+  },
 ];
 
 export default function HomePage() {
