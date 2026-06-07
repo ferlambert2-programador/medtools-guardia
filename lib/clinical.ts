@@ -133,6 +133,9 @@ export interface AcidBaseResult {
   oiInterp?: string;
   drivePressure?: number;
   drivePressureStatus?: string;
+  drivePressureCategory?: "protective" | "grey" | "danger";
+  vtWarning?: string;
+  proneAlert?: string;
 }
 
 function checkRespCompForMet(paCO2: number, hco3: number, metType: "acmet" | "alcmet"): boolean {
@@ -140,17 +143,29 @@ function checkRespCompForMet(paCO2: number, hco3: number, metType: "acmet" | "al
     const expCO2 = 1.5 * hco3 + 8;
     return paCO2 >= expCO2 - 2 && paCO2 <= expCO2 + 2;
   }
-  const expCO2 = 40 + 0.7 * (hco3 - 24);
-  return paCO2 >= expCO2 - 5 && paCO2 <= expCO2 + 5;
+  // Kassirer-Bleich para alcalosis metabólica
+  const expCO2 = 0.7 * hco3 + 21;
+  return paCO2 >= expCO2 - 2 && paCO2 <= expCO2 + 2;
 }
 
-function checkMetCompForResp(paCO2: number, hco3: number, respType: "acresp" | "alcresp"): boolean {
+function checkMetCompForResp(
+  paCO2: number,
+  hco3: number,
+  respType: "acresp" | "alcresp",
+  ventilated: boolean
+): boolean {
   if (respType === "acresp") {
     const delta = paCO2 - 40;
-    return hco3 >= 24 + 0.1 * delta - 3 && hco3 <= 24 + 0.35 * delta + 3;
+    const expHCO3 = 24 + 0.1 * delta;
+    if (ventilated) return hco3 >= expHCO3 - 1.5 && hco3 <= expHCO3 + 1.5;
+    // No ventilado: acepta desde aguda (±1.5) hasta crónica (±3)
+    return hco3 >= 24 + 0.1 * delta - 1.5 && hco3 <= 24 + 0.35 * delta + 3;
   }
   const delta = 40 - paCO2;
-  return hco3 >= 24 - 0.5 * delta - 3 && hco3 <= 24 - 0.2 * delta + 3;
+  const expHCO3 = 24 - 0.2 * delta;
+  if (ventilated) return hco3 >= expHCO3 - 2.5 && hco3 <= expHCO3 + 2.5;
+  // No ventilado: acepta desde aguda hasta crónica
+  return hco3 >= 24 - 0.5 * delta - 2.5 && hco3 <= 24 - 0.2 * delta + 2.5;
 }
 
 export function analyzeAcidBase(params: {
@@ -167,8 +182,9 @@ export function analyzeAcidBase(params: {
   ventilated: boolean;
   peep?: number;
   pplat?: number;
+  vt?: number;
 }): AcidBaseResult {
-  const { pH, paCO2, hco3, paO2, fiO2, na, cl, age, eb, lactate, ventilated, peep, pplat } = params;
+  const { pH, paCO2, hco3, paO2, fiO2, na, cl, age, eb, lactate, ventilated, peep, pplat, vt } = params;
   const phNormal = pH >= 7.35 && pH <= 7.45;
   const phContext = phNormal
     ? `pH ${pH} — normal`
@@ -176,22 +192,23 @@ export function analyzeAcidBase(params: {
     ? `pH ${pH} — acidemia`
     : `pH ${pH} — alcalemia`;
 
-  // Independent component assessment
+  // Paso 1 — Componente respiratorio
   const respRaw: "acresp" | "alcresp" | null = paCO2 > 45 ? "acresp" : paCO2 < 35 ? "alcresp" : null;
 
+  // Paso 2 — Componente metabólico (HCO3 primario, EB ±3 como desempate en rango 22-26)
   let metRaw: "acmet" | "alcmet" | null = null;
   if (hco3 < 22) {
     metRaw = "acmet";
   } else if (hco3 > 26) {
     metRaw = "alcmet";
   } else if (eb !== undefined && !isNaN(eb)) {
-    if (eb <= -4) metRaw = "acmet";
-    else if (eb >= 4) metRaw = "alcmet";
+    if (eb < -3) metRaw = "acmet";
+    else if (eb > 3) metRaw = "alcmet";
   }
 
   const oxyComp: "hipoxemia" | null = paO2 < 60 ? "hipoxemia" : null;
 
-  // For discordant pairs, check if one component is within the expected compensation range
+  // Paso 3 — Para pares discordantes, verificar si uno está dentro del rango de compensación
   let respComp = respRaw;
   let metComp = metRaw;
 
@@ -202,16 +219,16 @@ export function analyzeAcidBase(params: {
 
     if (discordant) {
       const respIsComp = checkRespCompForMet(paCO2, hco3, metRaw);
-      const metIsComp = checkMetCompForResp(paCO2, hco3, respRaw);
+      const metIsComp = checkMetCompForResp(paCO2, hco3, respRaw, ventilated);
 
       if (respIsComp && !metIsComp) {
-        respComp = null; // Respiratory is compensation → metabolic is primary
+        respComp = null;
       } else if (metIsComp && !respIsComp) {
-        metComp = null; // Metabolic is compensation → respiratory is primary
+        metComp = null;
       }
-      // If both or neither → double disorder (both kept)
+      // Si ambos o ninguno → doble trastorno
     }
-    // Concordant → always double disorder (both kept)
+    // Concordante → siempre doble trastorno
   }
 
   const acidBaseComps: ("acresp" | "alcresp" | "acmet" | "alcmet")[] = [];
@@ -251,8 +268,9 @@ export function analyzeAcidBase(params: {
       : `Doble trastorno: ${COMP_LABELS[acidBaseComps[0]]} + ${COMP_LABELS[acidBaseComps[1]]}`;
   }
 
-  // Compensation
+  // Compensación esperada
   let compensation: CompensationResult;
+
   if (acidBaseComps.length >= 2) {
     compensation = {
       formula: "—",
@@ -260,6 +278,7 @@ export function analyzeAcidBase(params: {
       status: "no_aplica",
     };
   } else if (primaryType === "acmet") {
+    // Winter (NEJM 1967)
     const expCO2 = 1.5 * hco3 + 8;
     const lo = +(expCO2 - 2).toFixed(1);
     const hi = +(expCO2 + 2).toFixed(1);
@@ -275,13 +294,14 @@ export function analyzeAcidBase(params: {
       status: ok ? "adecuada" : above ? "insuficiente" : "excesiva",
     };
   } else if (primaryType === "alcmet") {
-    const expCO2 = 40 + 0.7 * (hco3 - 24);
-    const lo = +(expCO2 - 5).toFixed(1);
-    const hi = +(expCO2 + 5).toFixed(1);
+    // Kassirer-Bleich
+    const expCO2 = 0.7 * hco3 + 21;
+    const lo = +(expCO2 - 2).toFixed(1);
+    const hi = +(expCO2 + 2).toFixed(1);
     const ok = paCO2 >= lo && paCO2 <= hi;
     const above = paCO2 > hi;
     compensation = {
-      formula: "PaCO₂ = 40 + 0,7 × (HCO₃ – 24) (±5)",
+      formula: "Kassirer-Bleich: PaCO₂ = 0,7 × HCO₃ + 21 (±2)",
       expected: ok
         ? `Esperado: ${lo}–${hi} mmHg · Actual: ${paCO2} ✓ Adecuada`
         : above
@@ -292,50 +312,89 @@ export function analyzeAcidBase(params: {
   } else if (primaryType === "acresp") {
     const delta = paCO2 - 40;
     const aHCO3 = +(24 + 0.1 * delta).toFixed(1);
-    const cHCO3 = +(24 + 0.35 * delta).toFixed(1);
-    let note: string; let status: CompensationResult["status"];
-    if (hco3 >= aHCO3 - 3 && hco3 <= aHCO3 + 3) { note = "compatible con compensación aguda ✓"; status = "adecuada"; }
-    else if (hco3 >= cHCO3 - 3 && hco3 <= cHCO3 + 3) { note = "compatible con compensación crónica ✓"; status = "adecuada"; }
-    else if (hco3 > cHCO3 + 3) { note = "HCO₃ elevado → alcalosis metabólica sobreagregada"; status = "excesiva"; }
-    else { note = "HCO₃ insuficiente → posible acidosis metabólica sobreagregada"; status = "insuficiente"; }
-    compensation = { formula: "HCO₃ esperado: aguda = 24+0,1×ΔPaCO₂ · crónica = 24+0,35×ΔPaCO₂", expected: `Aguda: ~${aHCO3} · Crónica: ~${cHCO3} mEq/L · Actual: ${hco3} — ${note}`, status };
+    if (ventilated) {
+      // Modo ventilado: solo compensación aguda
+      const lo = +(+aHCO3 - 1.5).toFixed(1);
+      const hi = +(+aHCO3 + 1.5).toFixed(1);
+      let note: string; let status: CompensationResult["status"];
+      if (hco3 >= +lo && hco3 <= +hi) { note = "compatible con compensación aguda ✓"; status = "adecuada"; }
+      else if (hco3 > +hi) { note = "HCO₃ elevado → alcalosis metabólica sobreagregada"; status = "excesiva"; }
+      else { note = "HCO₃ insuficiente → posible acidosis metabólica sobreagregada"; status = "insuficiente"; }
+      compensation = {
+        formula: "HCO₃ esperado (aguda): 24 + 0,1×(PaCO₂−40) ±1,5",
+        expected: `Esperado: ${lo}–${hi} mEq/L · Actual: ${hco3} — ${note}`,
+        status,
+      };
+    } else {
+      // No ventilado: aguda y crónica
+      const cHCO3 = +(24 + 0.35 * delta).toFixed(1);
+      let note: string; let status: CompensationResult["status"];
+      if (hco3 >= +aHCO3 - 1.5 && hco3 <= +aHCO3 + 1.5) { note = "compatible con compensación aguda ✓"; status = "adecuada"; }
+      else if (hco3 >= +cHCO3 - 3 && hco3 <= +cHCO3 + 3) { note = "compatible con compensación crónica ✓"; status = "adecuada"; }
+      else if (hco3 > +cHCO3 + 3) { note = "HCO₃ elevado → alcalosis metabólica sobreagregada"; status = "excesiva"; }
+      else { note = "HCO₃ insuficiente → posible acidosis metabólica sobreagregada"; status = "insuficiente"; }
+      compensation = {
+        formula: "HCO₃ esperado: aguda = 24+0,1×ΔPaCO₂ ±1,5 · crónica = 24+0,35×ΔPaCO₂ ±3",
+        expected: `Aguda: ~${aHCO3} · Crónica: ~${cHCO3} mEq/L · Actual: ${hco3} — ${note}`,
+        status,
+      };
+    }
   } else if (primaryType === "alcresp") {
     const delta = 40 - paCO2;
     const aHCO3 = +(24 - 0.2 * delta).toFixed(1);
-    const cHCO3 = +(24 - 0.5 * delta).toFixed(1);
-    let note: string; let status: CompensationResult["status"];
-    if (hco3 >= aHCO3 - 3 && hco3 <= aHCO3 + 3) { note = "compatible con compensación aguda ✓"; status = "adecuada"; }
-    else if (hco3 >= cHCO3 - 3 && hco3 <= cHCO3 + 3) { note = "compatible con compensación crónica ✓"; status = "adecuada"; }
-    else if (hco3 < cHCO3 - 3) { note = "HCO₃ bajo → acidosis metabólica sobreagregada"; status = "insuficiente"; }
-    else { note = "HCO₃ elevado → alcalosis metabólica sobreagregada"; status = "excesiva"; }
-    compensation = { formula: "HCO₃ esperado: aguda = 24−0,2×ΔPaCO₂ · crónica = 24−0,5×ΔPaCO₂", expected: `Aguda: ~${aHCO3} · Crónica: ~${cHCO3} mEq/L · Actual: ${hco3} — ${note}`, status };
+    if (ventilated) {
+      const lo = +(+aHCO3 - 2.5).toFixed(1);
+      const hi = +(+aHCO3 + 2.5).toFixed(1);
+      let note: string; let status: CompensationResult["status"];
+      if (hco3 >= +lo && hco3 <= +hi) { note = "compatible con compensación aguda ✓"; status = "adecuada"; }
+      else if (hco3 < +lo) { note = "HCO₃ bajo → acidosis metabólica sobreagregada"; status = "insuficiente"; }
+      else { note = "HCO₃ elevado → alcalosis metabólica sobreagregada"; status = "excesiva"; }
+      compensation = {
+        formula: "HCO₃ esperado (aguda): 24 − 0,2×(40−PaCO₂) ±2,5",
+        expected: `Esperado: ${lo}–${hi} mEq/L · Actual: ${hco3} — ${note}`,
+        status,
+      };
+    } else {
+      const cHCO3 = +(24 - 0.5 * delta).toFixed(1);
+      let note: string; let status: CompensationResult["status"];
+      if (hco3 >= +aHCO3 - 2.5 && hco3 <= +aHCO3 + 2.5) { note = "compatible con compensación aguda ✓"; status = "adecuada"; }
+      else if (hco3 >= +cHCO3 - 2.5 && hco3 <= +cHCO3 + 2.5) { note = "compatible con compensación crónica ✓"; status = "adecuada"; }
+      else if (hco3 < +cHCO3 - 2.5) { note = "HCO₃ bajo → acidosis metabólica sobreagregada"; status = "insuficiente"; }
+      else { note = "HCO₃ elevado → alcalosis metabólica sobreagregada"; status = "excesiva"; }
+      compensation = {
+        formula: "HCO₃ esperado: aguda = 24−0,2×(40−PaCO₂) ±2,5 · crónica = 24−0,5×(40−PaCO₂) ±2,5",
+        expected: `Aguda: ~${aHCO3} · Crónica: ~${cHCO3} mEq/L · Actual: ${hco3} — ${note}`,
+        status,
+      };
+    }
   } else {
     compensation = { formula: "—", expected: "No aplica", status: "no_aplica" };
   }
 
-  // Anion gap
+  // Anion gap (Figge — sin corrección por albúmina)
   let anionGap: number | null = null;
   let anionGapStatus: string;
   if (na !== undefined && !isNaN(na) && cl !== undefined && !isNaN(cl)) {
     anionGap = na - (cl + hco3);
+    const albNote = "· Si hipoalbuminemia: AG corr = AG + 2,5×(4−alb g/dL)";
     anionGapStatus = anionGap > 12
-      ? `${anionGap.toFixed(1)} mEq/L — elevado → acidosis de alto anion gap`
-      : `${anionGap.toFixed(1)} mEq/L — normal (8–12 mEq/L)`;
+      ? `${anionGap.toFixed(1)} mEq/L — elevado → buscar MUDPILES ${albNote}`
+      : `${anionGap.toFixed(1)} mEq/L — normal (8–12 mEq/L) ${albNote}`;
   } else {
     anionGapStatus = "Ingresar Na⁺ y Cl⁻ para calcular";
   }
 
-  // Delta-delta
+  // Delta-delta (Emmett & Narins)
   let deltaRatio: number | null = null;
   let deltaRatioInterp: string;
   if (anionGap !== null && anionGap > 12) {
     const denom = 24 - hco3;
     if (denom !== 0) {
       deltaRatio = (anionGap - 12) / denom;
-      if (deltaRatio < 0.4) deltaRatioInterp = `${deltaRatio.toFixed(2)} — Acidosis no aniónica pura`;
-      else if (deltaRatio < 1.0) deltaRatioInterp = `${deltaRatio.toFixed(2)} — Mixto: aniónica + no aniónica`;
-      else if (deltaRatio <= 2.0) deltaRatioInterp = `${deltaRatio.toFixed(2)} — Acidosis aniónica pura`;
-      else deltaRatioInterp = `${deltaRatio.toFixed(2)} — Acidosis aniónica + alcalosis metabólica`;
+      if (deltaRatio < 0.4) deltaRatioInterp = `${deltaRatio.toFixed(2)} — Acidosis hiperclorémica pura`;
+      else if (deltaRatio < 1.0) deltaRatioInterp = `${deltaRatio.toFixed(2)} — Mixto: anión gap + hiperclorémica`;
+      else if (deltaRatio <= 2.0) deltaRatioInterp = `${deltaRatio.toFixed(2)} — Acidosis de alto anión gap pura`;
+      else deltaRatioInterp = `${deltaRatio.toFixed(2)} — AG + alcalosis metabólica subyacente`;
     } else { deltaRatioInterp = "HCO₃ = 24 (denominador cero)"; }
   } else if (anionGap !== null) {
     deltaRatioInterp = "No aplica — anion gap normal";
@@ -343,7 +402,7 @@ export function analyzeAcidBase(params: {
     deltaRatioInterp = "Requiere cálculo de anion gap";
   }
 
-  // A-a gradient
+  // Gradiente A-a
   const pAO2 = fiO2 * 713 - paCO2 / 0.8;
   const aaGradient = pAO2 - paO2;
   let aaGradientExpected: number | null = null;
@@ -352,21 +411,23 @@ export function analyzeAcidBase(params: {
     aaGradientExpected = age / 4 + 4;
     const upper = aaGradientExpected + 10;
     aaGradientStatus = aaGradient <= upper
-      ? `Normal para la edad (≤${upper.toFixed(0)} mmHg)`
-      : "Elevado — sugiere patología intrapulmonar";
+      ? `Normal para la edad (≤${upper.toFixed(0)} mmHg) — descarta patología parenquimatosa`
+      : "Elevado — sugiere patología intrapulmonar (no hipoventilación pura)";
   } else {
-    aaGradientStatus = aaGradient <= 15 ? "Normal (< 15 mmHg en adulto joven)" : "Elevado — sugiere patología intrapulmonar";
+    aaGradientStatus = aaGradient <= 15
+      ? "Normal (< 15 mmHg) — compatible con hipoventilación pura"
+      : "Elevado — sugiere patología intrapulmonar";
   }
 
   // EB
   let ebStatus: string | undefined;
   if (eb !== undefined && !isNaN(eb)) {
-    if (eb >= -2 && eb <= 2) ebStatus = `Normal (${eb >= 0 ? "+" : ""}${eb} mEq/L)`;
-    else if (eb < -2) ebStatus = `Déficit de bases (${eb} mEq/L) — acidosis metabólica`;
+    if (eb >= -3 && eb <= 3) ebStatus = `Normal (${eb >= 0 ? "+" : ""}${eb} mEq/L)`;
+    else if (eb < -3) ebStatus = `Déficit de bases (${eb} mEq/L) — acidosis metabólica`;
     else ebStatus = `Exceso de bases (+${eb} mEq/L) — alcalosis metabólica`;
   }
 
-  // Lactate
+  // Lactato
   let lactateStatus: string | undefined;
   if (lactate !== undefined && !isNaN(lactate)) {
     if (lactate < 2) lactateStatus = `Normal (${lactate} mmol/L)`;
@@ -374,32 +435,53 @@ export function analyzeAcidBase(params: {
     else lactateStatus = `Hiperlactatemia severa — hipoperfusión/shock (${lactate} mmol/L)`;
   }
 
-  // Ventilated-only
+  // Solo modo ventilado
   let pFRatio: number | undefined;
   let pFRatioInterp: string | undefined;
   let oxygenationIndex: number | undefined;
   let oiInterp: string | undefined;
   let drivePressure: number | undefined;
   let drivePressureStatus: string | undefined;
+  let drivePressureCategory: "protective" | "grey" | "danger" | undefined;
+  let vtWarning: string | undefined;
+  let proneAlert: string | undefined;
 
   if (ventilated) {
+    // P/F — criterios de Berlín 2012
     pFRatio = paO2 / fiO2;
     if (pFRatio > 300) pFRatioInterp = "Sin criterios de SDRA (> 300)";
     else if (pFRatio > 200) pFRatioInterp = "SDRA leve — Berlín (200–300, PEEP ≥ 5)";
     else if (pFRatio > 100) pFRatioInterp = "SDRA moderado — Berlín (100–200, PEEP ≥ 5)";
     else pFRatioInterp = "SDRA grave — Berlín (≤ 100, PEEP ≥ 5)";
 
+    if (fiO2 > 0.60 && pFRatio <= 200) {
+      proneAlert = "FiO₂ > 60% con SDRA moderado-grave — evaluar posición prono precoz y criterios para ECMO";
+    }
+
     if (peep !== undefined && pplat !== undefined && !isNaN(peep) && !isNaN(pplat)) {
       drivePressure = pplat - peep;
-      drivePressureStatus = drivePressure < 15
-        ? "Protector (< 15 cmH₂O)"
-        : "Elevado — riesgo de VILI (≥ 15 cmH₂O)";
-      const map = peep + drivePressure / 3;
-      oxygenationIndex = (fiO2 * 100 * map) / paO2;
+      // Amato et al. NEJM 2015 / Tokioka
+      if (drivePressure < 13) {
+        drivePressureStatus = "Protectora (< 13 cmH₂O)";
+        drivePressureCategory = "protective";
+      } else if (drivePressure <= 15) {
+        drivePressureStatus = "Zona gris (13–15 cmH₂O) — monitorizar";
+        drivePressureCategory = "grey";
+      } else {
+        drivePressureStatus = "Elevada (> 15 cmH₂O) — riesgo de VILI";
+        drivePressureCategory = "danger";
+      }
+      const pmean = peep + drivePressure / 2;
+      oxygenationIndex = (fiO2 * 100 * pmean) / paO2;
       if (oxygenationIndex < 5) oiInterp = "Normal (< 5)";
       else if (oxygenationIndex < 10) oiInterp = "SDRA leve (5–10)";
       else if (oxygenationIndex < 20) oiInterp = "SDRA moderado (10–20)";
-      else oiInterp = "SDRA grave (≥ 20)";
+      else if (oxygenationIndex < 25) oiInterp = "SDRA grave (20–25)";
+      else oiInterp = "SDRA muy grave (≥ 25) — considerar prono/ECMO";
+    }
+
+    if (vt !== undefined && !isNaN(vt) && vt > 550) {
+      vtWarning = `Vt ${vt} mL — posible hiperdistensión (proxy > 8 mL/kg PBW). Ajustar según peso ideal.`;
     }
   }
 
@@ -409,7 +491,8 @@ export function analyzeAcidBase(params: {
     aaGradient, aaGradientExpected, aaGradientStatus,
     ebStatus, lactateStatus,
     pFRatio, pFRatioInterp, oxygenationIndex, oiInterp,
-    drivePressure, drivePressureStatus,
+    drivePressure, drivePressureStatus, drivePressureCategory,
+    vtWarning, proneAlert,
   };
 }
 
