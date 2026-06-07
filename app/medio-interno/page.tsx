@@ -19,6 +19,7 @@ function Field({
   placeholder,
   readOnly,
   integer,
+  rightSlot,
 }: {
   label: string;
   unit?: string;
@@ -27,21 +28,29 @@ function Field({
   placeholder?: string;
   readOnly?: boolean;
   integer?: boolean;
+  rightSlot?: React.ReactNode;
 }) {
+  const inputEl = (
+    <input
+      type="text"
+      inputMode={integer ? "numeric" : "decimal"}
+      pattern={integer ? "[0-9]*" : "[0-9.,\\-]*"}
+      className={`${rightSlot ? "flex-1 min-w-0" : "w-full"} rounded-xl border border-slate-200 px-3 py-2.5 text-base outline-none focus:ring-2 focus:ring-teal-500/40 ${readOnly ? "bg-teal-50/80 border-teal-200 text-teal-800 font-semibold" : ""}`}
+      value={value}
+      onChange={onChange ? (e) => onChange(e.target.value) : undefined}
+      readOnly={readOnly}
+      placeholder={placeholder ?? ""}
+    />
+  );
   return (
     <label className="block space-y-1">
       <span className="text-sm font-medium text-slate-700">
         {label}
         {unit && <span className="ml-1 text-xs text-slate-400">{unit}</span>}
       </span>
-      <input
-        inputMode={integer ? "numeric" : "decimal"}
-        className={`${IN} ${readOnly ? "bg-teal-50/80 border-teal-200 text-teal-800 font-semibold" : ""}`}
-        value={value}
-        onChange={onChange ? (e) => onChange(e.target.value) : undefined}
-        readOnly={readOnly}
-        placeholder={placeholder ?? ""}
-      />
+      {rightSlot ? (
+        <div className="flex gap-1.5">{inputEl}{rightSlot}</div>
+      ) : inputEl}
     </label>
   );
 }
@@ -109,6 +118,9 @@ export default function MedioInternoPage() {
   const [edad, setEdad] = useState("");
 
   const p = (s: string) => parseFloat(s.replace(",", "."));
+
+  const toggleEbSign = () =>
+    setEb((v) => (v.startsWith("-") ? v.slice(1) : v && v !== "0" ? "-" + v : v));
 
   const dpAuto = useMemo(() => {
     const pv = p(peep);
@@ -208,7 +220,22 @@ export default function MedioInternoPage() {
           <Field label="PaCO₂" unit="mmHg" value={paCO2} onChange={setPaCO2} placeholder="55" />
           <Field label="PaO₂" unit="mmHg" value={paO2} onChange={setPaO2} placeholder="68" />
           <Field label="HCO₃⁻" unit="mEq/L" value={hco3} onChange={setHco3} placeholder="22" />
-          <Field label="EB" unit="mEq/L" value={eb} onChange={setEb} placeholder="−4" />
+          <Field
+              label="EB"
+              unit="mEq/L"
+              value={eb}
+              onChange={setEb}
+              placeholder="4"
+              rightSlot={
+                <button
+                  type="button"
+                  onClick={toggleEbSign}
+                  className="shrink-0 rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 active:bg-slate-100 transition-colors"
+                >
+                  ±
+                </button>
+              }
+            />
           <Field label="Lactato" unit="mmol/L" value={lactato} onChange={setLactato} placeholder="2.1" />
         </div>
       </div>
