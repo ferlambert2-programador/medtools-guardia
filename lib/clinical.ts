@@ -170,8 +170,8 @@ export function analyzeAcidBase(params: {
     else if (highHCO3) { primaryDisorder = "Alcalosis metabólica"; primaryType = "alcmet"; }
     else { primaryDisorder = "Alcalemia (patrón inespecífico)"; primaryType = "normal"; }
   } else {
-    if (highCO2 && highHCO3) { primaryDisorder = "pH normal — probable acidosis respiratoria crónica compensada"; primaryType = "acresp"; }
-    else if (lowCO2 && lowHCO3) { primaryDisorder = "pH normal — probable alcalosis respiratoria crónica compensada"; primaryType = "alcresp"; }
+    if (!ventilated && highCO2 && highHCO3) { primaryDisorder = "pH normal — probable acidosis respiratoria crónica compensada"; primaryType = "acresp"; }
+    else if (!ventilated && lowCO2 && lowHCO3) { primaryDisorder = "pH normal — probable alcalosis respiratoria crónica compensada"; primaryType = "alcresp"; }
     else { primaryDisorder = "Sin trastorno ácido-base primario"; primaryType = "normal"; }
   }
 
