@@ -103,6 +103,8 @@ export type AcidBasePrimaryType =
   | "alcresp"
   | "mixed";
 
+export type AcidBaseComponent = "acresp" | "alcresp" | "acmet" | "alcmet" | "hipoxemia";
+
 export interface CompensationResult {
   formula: string;
   expected: string;
@@ -113,6 +115,8 @@ export interface AcidBaseResult {
   primaryDisorder: string;
   primaryType: AcidBasePrimaryType;
   phNormal: boolean;
+  phContext: string;
+  components: AcidBaseComponent[];
   compensation: CompensationResult;
   anionGap: number | null;
   anionGapStatus: string;
@@ -129,6 +133,24 @@ export interface AcidBaseResult {
   oiInterp?: string;
   drivePressure?: number;
   drivePressureStatus?: string;
+}
+
+function checkRespCompForMet(paCO2: number, hco3: number, metType: "acmet" | "alcmet"): boolean {
+  if (metType === "acmet") {
+    const expCO2 = 1.5 * hco3 + 8;
+    return paCO2 >= expCO2 - 2 && paCO2 <= expCO2 + 2;
+  }
+  const expCO2 = 40 + 0.7 * (hco3 - 24);
+  return paCO2 >= expCO2 - 5 && paCO2 <= expCO2 + 5;
+}
+
+function checkMetCompForResp(paCO2: number, hco3: number, respType: "acresp" | "alcresp"): boolean {
+  if (respType === "acresp") {
+    const delta = paCO2 - 40;
+    return hco3 >= 24 + 0.1 * delta - 3 && hco3 <= 24 + 0.35 * delta + 3;
+  }
+  const delta = 40 - paCO2;
+  return hco3 >= 24 - 0.5 * delta - 3 && hco3 <= 24 - 0.2 * delta + 3;
 }
 
 export function analyzeAcidBase(params: {
@@ -148,36 +170,96 @@ export function analyzeAcidBase(params: {
 }): AcidBaseResult {
   const { pH, paCO2, hco3, paO2, fiO2, na, cl, age, eb, lactate, ventilated, peep, pplat } = params;
   const phNormal = pH >= 7.35 && pH <= 7.45;
+  const phContext = phNormal
+    ? `pH ${pH} — normal`
+    : pH < 7.35
+    ? `pH ${pH} — acidemia`
+    : `pH ${pH} — alcalemia`;
 
-  // Primary disorder
+  // Independent component assessment
+  const respRaw: "acresp" | "alcresp" | null = paCO2 > 45 ? "acresp" : paCO2 < 35 ? "alcresp" : null;
+
+  let metRaw: "acmet" | "alcmet" | null = null;
+  if (hco3 < 22) {
+    metRaw = "acmet";
+  } else if (hco3 > 26) {
+    metRaw = "alcmet";
+  } else if (eb !== undefined && !isNaN(eb)) {
+    if (eb <= -4) metRaw = "acmet";
+    else if (eb >= 4) metRaw = "alcmet";
+  }
+
+  const oxyComp: "hipoxemia" | null = paO2 < 60 ? "hipoxemia" : null;
+
+  // For discordant pairs, check if one component is within the expected compensation range
+  let respComp = respRaw;
+  let metComp = metRaw;
+
+  if (respRaw && metRaw) {
+    const discordant =
+      (respRaw === "acresp" && metRaw === "alcmet") ||
+      (respRaw === "alcresp" && metRaw === "acmet");
+
+    if (discordant) {
+      const respIsComp = checkRespCompForMet(paCO2, hco3, metRaw);
+      const metIsComp = checkMetCompForResp(paCO2, hco3, respRaw);
+
+      if (respIsComp && !metIsComp) {
+        respComp = null; // Respiratory is compensation → metabolic is primary
+      } else if (metIsComp && !respIsComp) {
+        metComp = null; // Metabolic is compensation → respiratory is primary
+      }
+      // If both or neither → double disorder (both kept)
+    }
+    // Concordant → always double disorder (both kept)
+  }
+
+  const acidBaseComps: ("acresp" | "alcresp" | "acmet" | "alcmet")[] = [];
+  if (respComp) acidBaseComps.push(respComp);
+  if (metComp) acidBaseComps.push(metComp);
+
+  const components: AcidBaseComponent[] = [
+    ...acidBaseComps,
+    ...(oxyComp ? [oxyComp] : []),
+  ];
+
+  const COMP_LABELS: Record<AcidBaseComponent, string> = {
+    acresp: "acidosis respiratoria",
+    alcresp: "alcalosis respiratoria",
+    acmet: "acidosis metabólica",
+    alcmet: "alcalosis metabólica",
+    hipoxemia: "hipoxemia",
+  };
+
   let primaryDisorder: string;
   let primaryType: AcidBasePrimaryType;
-  const acidemic = pH < 7.35;
-  const alkalemic = pH > 7.45;
-  const highCO2 = paCO2 > 45;
-  const lowCO2 = paCO2 < 35;
-  const lowHCO3 = hco3 < 22;
-  const highHCO3 = hco3 > 26;
 
-  if (acidemic) {
-    if (highCO2 && lowHCO3) { primaryDisorder = "Trastorno mixto: acidosis respiratoria + metabólica"; primaryType = "mixed"; }
-    else if (highCO2) { primaryDisorder = "Acidosis respiratoria"; primaryType = "acresp"; }
-    else if (lowHCO3) { primaryDisorder = "Acidosis metabólica"; primaryType = "acmet"; }
-    else { primaryDisorder = "Acidemia (patrón inespecífico)"; primaryType = "normal"; }
-  } else if (alkalemic) {
-    if (lowCO2 && highHCO3) { primaryDisorder = "Trastorno mixto: alcalosis respiratoria + metabólica"; primaryType = "mixed"; }
-    else if (lowCO2) { primaryDisorder = "Alcalosis respiratoria"; primaryType = "alcresp"; }
-    else if (highHCO3) { primaryDisorder = "Alcalosis metabólica"; primaryType = "alcmet"; }
-    else { primaryDisorder = "Alcalemia (patrón inespecífico)"; primaryType = "normal"; }
+  if (acidBaseComps.length === 0) {
+    primaryType = "normal";
+    primaryDisorder = oxyComp
+      ? "Sin trastorno ácido-base — hipoxemia aislada"
+      : "Sin trastorno ácido-base";
+  } else if (acidBaseComps.length === 1) {
+    primaryType = acidBaseComps[0];
+    primaryDisorder = oxyComp
+      ? `Doble trastorno: ${COMP_LABELS[acidBaseComps[0]]} + hipoxemia`
+      : `Trastorno simple: ${COMP_LABELS[acidBaseComps[0]]}`;
   } else {
-    if (!ventilated && highCO2 && highHCO3) { primaryDisorder = "pH normal — probable acidosis respiratoria crónica compensada"; primaryType = "acresp"; }
-    else if (!ventilated && lowCO2 && lowHCO3) { primaryDisorder = "pH normal — probable alcalosis respiratoria crónica compensada"; primaryType = "alcresp"; }
-    else { primaryDisorder = "Sin trastorno ácido-base primario"; primaryType = "normal"; }
+    primaryType = "mixed";
+    primaryDisorder = oxyComp
+      ? `Triple trastorno: ${COMP_LABELS[acidBaseComps[0]]} + ${COMP_LABELS[acidBaseComps[1]]} + hipoxemia`
+      : `Doble trastorno: ${COMP_LABELS[acidBaseComps[0]]} + ${COMP_LABELS[acidBaseComps[1]]}`;
   }
 
   // Compensation
   let compensation: CompensationResult;
-  if (primaryType === "acmet") {
+  if (acidBaseComps.length >= 2) {
+    compensation = {
+      formula: "—",
+      expected: "Doble trastorno — PaCO₂ y HCO₃ alterados de forma independiente, no compensatoria",
+      status: "no_aplica",
+    };
+  } else if (primaryType === "acmet") {
     const expCO2 = 1.5 * hco3 + 8;
     const lo = +(expCO2 - 2).toFixed(1);
     const hi = +(expCO2 + 2).toFixed(1);
@@ -322,7 +404,7 @@ export function analyzeAcidBase(params: {
   }
 
   return {
-    primaryDisorder, primaryType, phNormal, compensation,
+    primaryDisorder, primaryType, phNormal, phContext, components, compensation,
     anionGap, anionGapStatus, deltaRatio, deltaRatioInterp,
     aaGradient, aaGradientExpected, aaGradientStatus,
     ebStatus, lactateStatus,
