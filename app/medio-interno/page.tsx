@@ -18,6 +18,7 @@ function Field({
   onChange,
   placeholder,
   readOnly,
+  integer,
 }: {
   label: string;
   unit?: string;
@@ -25,6 +26,7 @@ function Field({
   onChange?: (v: string) => void;
   placeholder?: string;
   readOnly?: boolean;
+  integer?: boolean;
 }) {
   return (
     <label className="block space-y-1">
@@ -33,7 +35,7 @@ function Field({
         {unit && <span className="ml-1 text-xs text-slate-400">{unit}</span>}
       </span>
       <input
-        inputMode="decimal"
+        inputMode={integer ? "numeric" : "decimal"}
         className={`${IN} ${readOnly ? "bg-teal-50/80 border-teal-200 text-teal-800 font-semibold" : ""}`}
         value={value}
         onChange={onChange ? (e) => onChange(e.target.value) : undefined}
@@ -179,8 +181,8 @@ export default function MedioInternoPage() {
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
           <h2 className="font-bold text-slate-800">Parámetros ventilatorios</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <Field label="Vt" unit="mL" value={vt} onChange={setVt} placeholder="450" />
-            <Field label="FR" unit="rpm" value={fr} onChange={setFr} placeholder="16" />
+            <Field label="Vt" unit="mL" value={vt} onChange={setVt} placeholder="450" integer />
+            <Field label="FR" unit="rpm" value={fr} onChange={setFr} placeholder="16" integer />
             <Field label="PEEP" unit="cmH₂O" value={peep} onChange={setPeep} placeholder="5" />
             <Field label="FiO₂" unit="0–1 ó 21–100" value={fio2} onChange={setFio2} placeholder="0.40" />
             <Field label="Pplat" unit="cmH₂O" value={pplat} onChange={setPplat} placeholder="22" />
@@ -218,9 +220,9 @@ export default function MedioInternoPage() {
           Na⁺ y Cl⁻ para anion gap y delta-delta · Edad para gradiente A-a esperado
         </p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <Field label="Na⁺" unit="mEq/L" value={na} onChange={setNa} placeholder="140" />
-          <Field label="Cl⁻" unit="mEq/L" value={cl} onChange={setCl} placeholder="105" />
-          <Field label="Edad" unit="años" value={edad} onChange={setEdad} placeholder="65" />
+          <Field label="Na⁺" unit="mEq/L" value={na} onChange={setNa} placeholder="140" integer />
+          <Field label="Cl⁻" unit="mEq/L" value={cl} onChange={setCl} placeholder="105" integer />
+          <Field label="Edad" unit="años" value={edad} onChange={setEdad} placeholder="65" integer />
         </div>
       </div>
 
