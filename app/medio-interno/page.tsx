@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { MedicalDisclaimer } from "@/components/MedicalDisclaimer";
 import { analyzeAcidBase } from "@/lib/clinical";
-import type { AcidBaseResult, AcidBasePrimaryType } from "@/lib/clinical";
+import type { AcidBaseResult, AcidBaseComponent } from "@/lib/clinical";
 
 type Mode = "ventilado" | "no_ventilado";
 type Variant = "success" | "warning" | "danger" | "info" | "neutral";
@@ -83,11 +83,11 @@ function ResultRow({
   );
 }
 
-function diagVariant(type: AcidBasePrimaryType, phNormal: boolean): Variant {
-  if (phNormal) return type === "normal" ? "success" : "info";
-  if (type === "normal") return "success";
-  if (type === "mixed" || type === "acmet" || type === "acresp") return "danger";
-  return "warning";
+function diagVariant(components: AcidBaseComponent[]): Variant {
+  const ab = components.filter(c => c !== "hipoxemia");
+  if (ab.length === 0) return "success";
+  if (ab.length >= 2) return "danger";
+  return ab[0] === "acmet" || ab[0] === "acresp" ? "danger" : "warning";
 }
 
 function compVariant(status: AcidBaseResult["compensation"]["status"]): Variant {
@@ -259,9 +259,15 @@ export default function MedioInternoPage() {
           <h2 className="font-bold text-slate-800">Resultados</h2>
 
           <ResultRow
+            label="pH arterial"
+            value={result.phContext}
+            variant={result.phNormal ? "success" : result.phContext.includes("acidemia") ? "danger" : "warning"}
+          />
+
+          <ResultRow
             label="Diagnóstico ácido-base"
             value={result.primaryDisorder}
-            variant={diagVariant(result.primaryType, result.phNormal)}
+            variant={diagVariant(result.components)}
           />
 
           <ResultRow
