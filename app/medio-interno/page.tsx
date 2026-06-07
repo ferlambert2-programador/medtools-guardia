@@ -143,6 +143,7 @@ export default function MedioInternoPage() {
 
     const peepV = p(peep);
     const pplatV = p(pplat);
+    const vtV = p(vt);
     const naV = p(na);
     const clV = p(cl);
     const ebV = p(eb);
@@ -159,8 +160,9 @@ export default function MedioInternoPage() {
       ventilated: mode === "ventilado",
       peep: isNaN(peepV) ? undefined : peepV,
       pplat: isNaN(pplatV) ? undefined : pplatV,
+      vt: isNaN(vtV) ? undefined : vtV,
     });
-  }, [ph, paCO2, paO2, hco3, fio2, fio2NoVent, peep, pplat, na, cl, eb, lactato, edad, mode]);
+  }, [ph, paCO2, paO2, hco3, fio2, fio2NoVent, peep, pplat, vt, na, cl, eb, lactato, edad, mode]);
 
   return (
     <div className="space-y-6">
@@ -310,7 +312,7 @@ export default function MedioInternoPage() {
             <ResultRow
               label="Exceso de bases (EB)"
               value={result.ebStatus}
-              variant={p(eb) >= -2 && p(eb) <= 2 ? "success" : "warning"}
+              variant={p(eb) >= -3 && p(eb) <= 3 ? "success" : "warning"}
             />
           )}
 
@@ -322,12 +324,31 @@ export default function MedioInternoPage() {
             />
           )}
 
+          {mode === "ventilado" && result.vtWarning && (
+            <ResultRow
+              label="Volumen tidal (Vt)"
+              value={result.vtWarning}
+              variant="warning"
+            />
+          )}
+
+          {mode === "ventilado" && result.proneAlert && (
+            <ResultRow
+              label="Alerta clínica"
+              value={result.proneAlert}
+              variant="danger"
+            />
+          )}
+
           {mode === "ventilado" && result.drivePressure !== undefined && (
             <ResultRow
               label="Driving Pressure (DP = Pplat − PEEP)"
               value={`${result.drivePressure.toFixed(1)} cmH₂O`}
               detail={result.drivePressureStatus}
-              variant={result.drivePressure < 15 ? "success" : "danger"}
+              variant={
+                result.drivePressureCategory === "protective" ? "success" :
+                result.drivePressureCategory === "grey" ? "warning" : "danger"
+              }
             />
           )}
 
@@ -344,7 +365,7 @@ export default function MedioInternoPage() {
             <ResultRow
               label="Índice de oxigenación (IO)"
               value={result.oxygenationIndex.toFixed(1)}
-              detail={`${result.oiInterp} · IO = FiO₂ × 100 × PAM / PaO₂ (PAM estimada: PEEP + DP/3)`}
+              detail={`${result.oiInterp} · IO = FiO₂% × Pmedia / PaO₂ (Pmedia estimada: PEEP + DP/2)`}
               variant={result.oxygenationIndex < 5 ? "success" : result.oxygenationIndex < 10 ? "warning" : "danger"}
             />
           )}
