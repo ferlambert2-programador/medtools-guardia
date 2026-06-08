@@ -14,6 +14,8 @@ const NAV = [
   { href: "/nefrologia", label: "Nefrología" },
   { href: "/imc", label: "IMC" },
   { href: "/medio-interno", label: "Medio Interno" },
+  { href: "/acerca-de", label: "Acerca de" },
+  { href: "/contacto", label: "Contacto" },
 ];
 
 export function SiteHeader() {
