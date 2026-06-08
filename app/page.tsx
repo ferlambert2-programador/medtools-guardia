@@ -90,6 +90,28 @@ export default function HomePage() {
         ))}
       </div>
 
+      <div className="space-y-3">
+        <h2 className="text-xl font-bold text-slate-800">Novedades</h2>
+        <ul className="space-y-3">
+          <li className="rounded-2xl border border-teal-100 bg-teal-50 p-4">
+            <span className="text-xs font-semibold text-teal-600 uppercase tracking-wide">Nuevo módulo</span>
+            <p className="mt-1 text-sm font-semibold text-slate-800">Medio Interno — Análisis gasométrico completo</p>
+            <p className="mt-0.5 text-sm text-slate-600">
+              Análisis ácido-base para pacientes ventilados y no ventilados: gasometría arterial,
+              gradiente A-a, índice de oxigenación, compensaciones esperadas y más.
+            </p>
+          </li>
+          <li className="rounded-2xl border border-slate-200 bg-white p-4">
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Actualización</span>
+            <p className="mt-1 text-sm font-semibold text-slate-800">Antibióticos — Correcciones en dosis de diálisis</p>
+            <p className="mt-0.5 text-sm text-slate-600">
+              Correcciones en el ajuste de antibióticos para pacientes en diálisis, con dosis
+              actualizadas según modalidad de reemplazo renal.
+            </p>
+          </li>
+        </ul>
+      </div>
+
       <p className="text-xs text-slate-400">
         Los resultados son orientativos. Verificar siempre con guías locales,
         ficha técnica y criterio clínico del equipo tratante.
